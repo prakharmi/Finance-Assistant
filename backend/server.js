@@ -2,6 +2,7 @@
 const express = require('express');
 const dotenv = require('dotenv');
 const mongoose = require('mongoose');
+const analyticsRoutes = require('./routes/analytics');
 
 const session = require('express-session'); // For managing user sessions
 const passport = require('passport');
@@ -50,6 +51,7 @@ mongoose.connect(DATABASE_URL)
 // API Routes
 app.use('/auth', authRoutes);
 app.use('/api/transactions', transactionRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 // Define the port
 const PORT = process.env.PORT || 8080;
