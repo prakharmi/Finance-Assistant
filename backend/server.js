@@ -3,23 +3,47 @@ const express = require('express');
 const dotenv = require('dotenv');
 const mongoose = require('mongoose');
 
+const session = require('express-session'); // For managing user sessions
+const passport = require('passport');
+const cors = require('cors');
+
 // Load environment variables from .env file
 dotenv.config();
 
+require('./config/passport-setup'); 
+
+// Import routes
+const authRoutes = require('./routes/auth');
+
 // Initialize the express app
 const app = express();
+
+// Middleware Setup
+app.use(cors());
+
+// Session Middleware
+app.use(session({
+  secret: process.env.SESSION_SECRET,
+  resave: false,
+  saveUninitialized: false,
+}));
+
+// Passport Middleware
+app.use(passport.initialize()); // Initialize Passport
+app.use(passport.session()); // Allow Passport to use sessions
 
 // Database Connection Logic
 const DATABASE_URL = process.env.DATABASE_URL || 'mongodb://127.0.0.1:27017/personal-finance';
 
 mongoose.connect(DATABASE_URL)
-  .then(() => {
-    console.log('Successfully connected to local MongoDB!');
-  })
+  .then(() => console.log('Successfully connected to local MongoDB!'))
   .catch((error) => {
     console.error('Error connecting to MongoDB:', error.message);
     process.exit(1);
   });
+
+// API Routes
+app.use('/auth', authRoutes);
 
 // Define the port
 const PORT = process.env.PORT || 8080;
