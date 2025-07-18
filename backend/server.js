@@ -14,11 +14,13 @@ require('./config/passport-setup');
 
 // Import routes
 const authRoutes = require('./routes/auth');
+const transactionRoutes = require('./routes/transactions');
 
 // Initialize the express app
 const app = express();
 
 // Middleware Setup
+app.use(express.json()); 
 app.use(cors({
   origin: 'http://localhost:5500',
   credentials: true // Allow cookies to be sent
@@ -47,6 +49,7 @@ mongoose.connect(DATABASE_URL)
 
 // API Routes
 app.use('/auth', authRoutes);
+app.use('/api/transactions', transactionRoutes);
 
 // Define the port
 const PORT = process.env.PORT || 8080;
