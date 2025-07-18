@@ -52,11 +52,7 @@ router.get('/monthly-summary', isLoggedIn, async (req, res) => {
             { $match: { user: new mongoose.Types.ObjectId(req.user.id) } },
             {
                 $group: {
-                    _id: {
-                        year: { $year: '$date' },
-                        month: { $month: '$date' },
-                        type: '$type'
-                    },
+                    _id: { year: { $year: '$date' }, month: { $month: '$date' }, type: '$type' },
                     totalAmount: { $sum: '$amount' }
                 }
             },
@@ -68,5 +64,44 @@ router.get('/monthly-summary', isLoggedIn, async (req, res) => {
         res.status(500).json({ message: 'Server Error' });
     }
 });
+
+// GET /api/analytics/category-trend
+// Get spending trend for a specific category
+
+router.get('/category-trend', isLoggedIn, async (req, res) => {
+    try {
+        const { categoryName } = req.query;
+        if (!categoryName) {
+            return res.status(400).json({ message: 'Category name is required.' });
+        }
+
+        const category = await Category.findOne({ name: categoryName, user: req.user.id });
+        if (!category) {
+            return res.json([]); // Return empty if category doesn't exist for user
+        }
+
+        const trendData = await Transaction.aggregate([
+            {
+                $match: {
+                    user: new mongoose.Types.ObjectId(req.user.id),
+                    type: 'expense',
+                    category: category._id
+                }
+            },
+            {
+                $group: {
+                    _id: { year: { $year: '$date' }, month: { $month: '$date' } },
+                    totalAmount: { $sum: '$amount' }
+                }
+            },
+            { $sort: { '_id.year': 1, '_id.month': 1 } }
+        ]);
+        res.json(trendData);
+    } catch (error) {
+        console.error('Error fetching category trend:', error);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
 
 module.exports = router;
