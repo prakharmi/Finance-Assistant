@@ -9,7 +9,7 @@ router.get('/google', passport.authenticate('google', {
 
 // URL user will be redirected to after sign in
 router.get('/google/callback', passport.authenticate('google', {
-  successRedirect: 'http://localhost:5500/frontend/dashboard.html', // Redirect on success
+  successRedirect: 'http://localhost:5500/frontend/dashboard/dashboard.html', // Redirect on success
   failureRedirect: 'http://localhost:5500/frontend/index.html' // Redirect on failure
 }));
 
