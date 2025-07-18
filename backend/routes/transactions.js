@@ -4,6 +4,22 @@ const { isLoggedIn } = require('../middleware/authMiddleware');
 const Transaction = require('../models/Transaction');
 const Category = require('../models/Category');
 
+// GET /api/transactions
+// Get all transactions for a user
+router.get('/', isLoggedIn, async (req, res) => {
+  try {
+    // Find all transactions that belong to the logged-in user
+    const transactions = await Transaction.find({ user: req.user._id })
+      .sort({ date: -1 }) // sort by date to show newest first
+      .populate('category'); // It replaces the category ID with the actual category object (so we can get its name).
+
+    res.status(200).json(transactions);
+  } catch (error) {
+    console.error('Error fetching transactions:', error);
+    res.status(500).json({ message: 'Server error while fetching transactions.' });
+  }
+});
+
 // POST /api/transactions
 // Create a new transaction
 router.post('/', isLoggedIn, async (req, res) => {
