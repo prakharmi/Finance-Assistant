@@ -72,19 +72,13 @@ router.get('/expenses-by-category', isLoggedIn, async (req, res) => {
     }
 });
 
-
 // GET /api/analytics/monthly-summary
 // Get monthly income vs expense for the last 12 months
 router.get('/monthly-summary', isLoggedIn, async (req, res) => {
     try {
         const monthlyData = await Transaction.aggregate([
             { $match: { user: new mongoose.Types.ObjectId(req.user.id) } },
-            {
-                $group: {
-                    _id: { year: { $year: '$date' }, month: { $month: '$date' }, type: '$type' },
-                    totalAmount: { $sum: '$amount' }
-                }
-            },
+            { $group: { _id: { year: { $year: '$date' }, month: { $month: '$date' }, type: '$type' }, totalAmount: { $sum: '$amount' } } },
             { $sort: { '_id.year': 1, '_id.month': 1 } }
         ]);
         res.json(monthlyData);
@@ -99,21 +93,12 @@ router.get('/monthly-summary', isLoggedIn, async (req, res) => {
 router.get('/category-trend', isLoggedIn, async (req, res) => {
     try {
         const { categoryName } = req.query;
-        if (!categoryName) {
-            return res.status(400).json({ message: 'Category name is required.' });
-        }
+        if (!categoryName) return res.status(400).json({ message: 'Category name is required.' });
         const category = await Category.findOne({ name: categoryName, user: req.user.id });
-        if (!category) {
-            return res.json([]);
-        }
+        if (!category) return res.json([]);
         const trendData = await Transaction.aggregate([
             { $match: { user: new mongoose.Types.ObjectId(req.user.id), type: 'expense', category: category._id } },
-            {
-                $group: {
-                    _id: { year: { $year: '$date' }, month: { $month: '$date' } },
-                    totalAmount: { $sum: '$amount' }
-                }
-            },
+            { $group: { _id: { year: { $year: '$date' }, month: { $month: '$date' } }, totalAmount: { $sum: '$amount' } } },
             { $sort: { '_id.year': 1, '_id.month': 1 } }
         ]);
         res.json(trendData);
