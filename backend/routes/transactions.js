@@ -6,11 +6,11 @@ const Category = require('../models/Category');
 const mongoose = require('mongoose');
 
 // GET /api/transactions
-// Get all transactions for a user with optional filtering
+// Get all transactions for a user with filtering and pagination
 router.get('/', isLoggedIn, async (req, res) => {
   try {
-    const { type, category: categoryName, dateRange } = req.query;
-
+    const { type, category: categoryName, dateRange, page = 1, limit = 10 } = req.query;
+  
     const filter = { user: req.user.id };
 
     // Apply type filter
@@ -26,11 +26,11 @@ router.get('/', isLoggedIn, async (req, res) => {
         filter.category = category._id;
       } else {
         // If category doesn't exist for the user, return no transactions
-        return res.status(200).json([]);
+        return res.json({ transactions: [], currentPage: 1, totalPages: 0 });
       }
     }
     
-    // Apply date range filter
+    // Apply date range filter 
     if (dateRange && dateRange !== 'all') {
         const startDate = new Date();
         if (dateRange === 'week') {
@@ -43,11 +43,32 @@ router.get('/', isLoggedIn, async (req, res) => {
         filter.date = { $gte: startDate };
     }
 
+    // Pagination Logic
+    const pageNum = parseInt(page, 10);
+    const limitNum = parseInt(limit, 10);
+    const skip = (pageNum - 1) * limitNum;
+
+    // Get the total number of documents that match the filter
+    const totalTransactions = await Transaction.countDocuments(filter);
+    
+    // Calculate the total number of pages
+    const totalPages = Math.ceil(totalTransactions / limitNum);
+
+    // Fetch the paginated transactions from the database
     const transactions = await Transaction.find(filter)
       .sort({ date: -1 })
-      .populate('category');
-      
-    res.status(200).json(transactions);
+      .populate('category')
+      .skip(skip)
+      .limit(limitNum);
+
+    // Return response with transaction data and pagination info
+    res.status(200).json({
+      transactions,
+      currentPage: pageNum,
+      totalPages,
+      totalTransactions
+    });
+
   } catch (error) {
     console.error('Error fetching transactions:', error);
     res.status(500).json({ message: 'Server error.' });
