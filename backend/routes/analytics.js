@@ -11,14 +11,8 @@ router.get('/summary', isLoggedIn, async (req, res) => {
     try {
         const summary = await Transaction.aggregate([
             { $match: { user: new mongoose.Types.ObjectId(req.user.id) } },
-            {
-                $group: {
-                    _id: '$type',
-                    totalAmount: { $sum: '$amount' }
-                }
-            }
+            { $group: { _id: '$type', totalAmount: { $sum: '$amount' } } }
         ]);
-
         const result = { totalIncome: 0, totalExpense: 0, netSavings: 0 };
         summary.forEach(item => {
             if (item._id === 'income') result.totalIncome = item.totalAmount;
@@ -46,6 +40,31 @@ router.get('/expenses-by-category', isLoggedIn, async (req, res) => {
         res.json(expensesByCategory);
     } catch (error) {
         console.error('Error fetching expenses by category:', error);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+// GET /api/analytics/monthly-summary
+// Get monthly income vs expense for the last 12 months
+router.get('/monthly-summary', isLoggedIn, async (req, res) => {
+    try {
+        const monthlyData = await Transaction.aggregate([
+            { $match: { user: new mongoose.Types.ObjectId(req.user.id) } },
+            {
+                $group: {
+                    _id: {
+                        year: { $year: '$date' },
+                        month: { $month: '$date' },
+                        type: '$type'
+                    },
+                    totalAmount: { $sum: '$amount' }
+                }
+            },
+            { $sort: { '_id.year': 1, '_id.month': 1 } }
+        ]);
+        res.json(monthlyData);
+    } catch (error) {
+        console.error('Error fetching monthly summary:', error);
         res.status(500).json({ message: 'Server Error' });
     }
 });
