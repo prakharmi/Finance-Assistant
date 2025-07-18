@@ -1,10 +1,15 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // State Management (This object holds the current state of our filters)
+    // State Management (This object holds the current state of our filters and pagination.)
     const state = {
         filters: {
             type: 'all',
             category: 'all',
             dateRange: 'all'
+        },
+        pagination: { // New: Pagination state
+            currentPage: 1,
+            totalPages: 1,
+            itemsPerPage: 10 // Default items per page
         }
     };
 
@@ -19,30 +24,43 @@ document.addEventListener('DOMContentLoaded', () => {
         transactionListDiv: document.getElementById('transaction-list'),
         filterControls: document.getElementById('filter-controls'),
         paginationControls: document.getElementById('pagination-controls'),
+        
+        // New: Pagination elements
+        limitSelect: document.getElementById('limit-select'),
+        pageInfo: document.getElementById('page-info'),
+        prevPageBtn: document.getElementById('prev-page-btn'),
+        nextPageBtn: document.getElementById('next-page-btn'),
     };
 
     // API and Rendering functions
-
-    //Fetches transactions based on the current filter state and calls renderTransaction function to display
+    // Fetches transactions based on the current filter and pagination state and calls renderTransaction function to display
     const fetchAndRenderTransactions = async () => {
         const { type, category, dateRange } = state.filters;
-        // Build the URL with query parameters based on the current filter state.
-        const url = `http://localhost:8080/api/transactions?type=${type}&category=${category}&dateRange=${dateRange}`;
         
+        const { currentPage, itemsPerPage } = state.pagination; // New: Get pagination state
+        
+        // Build the URL with query parameters based on the current filter and pagination state.
+        const url = `http://localhost:8080/api/transactions?page=${currentPage}&limit=${itemsPerPage}&type=${type}&category=${category}&dateRange=${dateRange}`;
+
         try {
-            elements.transactionListDiv.innerHTML = '<p class="text-gray-500 dark:text-gray-400">Loading transactions...</p>';
+            elements.transactionListDiv.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-center py-4">Loading transactions...</p>'; // Updated loading message
             const response = await fetch(url, { credentials: 'include' });
-            
+
             if (!response.ok) {
                 throw new Error('Failed to fetch transactions');
             }
-            
-            const transactions = await response.json();
-            renderTransactions(transactions);
+
+            const data = await response.json(); // New: Expect data to contain pagination info
+            renderTransactions(data.transactions);
+
+            // New: Update pagination state from the response
+            state.pagination.currentPage = data.currentPage;
+            state.pagination.totalPages = data.totalPages;
+            updatePaginationUI(); // New: Update pagination UI
 
         } catch (error) {
             console.error('Error fetching transactions:', error);
-            elements.transactionListDiv.innerHTML = '<p class="text-red-500">Could not load transactions. Please try again later.</p>';
+            elements.transactionListDiv.innerHTML = '<p class="text-red-500 text-center py-4">Could not load transactions. Please try again later.</p>'; // Updated error message
         }
     };
 
@@ -52,7 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // If no transactions, display None
         if (transactions.length === 0) {
-            elements.transactionListDiv.innerHTML = '<p class="text-gray-600 dark:text-gray-400 text-center py-4">No transactions found for the selected filters.</p>';
+            elements.transactionListDiv.innerHTML = '<p class="text-gray-600 dark:text-gray-400 text-center py-8">No transactions found for the selected filters.</p>';
             return;
         }
 
@@ -86,6 +104,20 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.transactionListDiv.appendChild(container);
     };
 
+    // New: Updates the pagination controls UI based on the current state.
+    const updatePaginationUI = () => {
+        const { currentPage, totalPages } = state.pagination;
+        if (totalPages > 0) {
+            elements.pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
+            elements.prevPageBtn.disabled = currentPage <= 1;
+            elements.nextPageBtn.disabled = currentPage >= totalPages;
+            elements.paginationControls.classList.remove('hidden'); // Show pagination controls
+        } else {
+            // Hide pagination if there are no results
+            elements.paginationControls.classList.add('hidden');
+        }
+    };
+
     // Functions to create UI of Filters
     // name - The name of the filter
     // options - Array of {value, label} objects for dropdown items
@@ -103,8 +135,8 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
 
         const menu = document.createElement('div');
-        menu.className = 'origin-top-left absolute left-0 mt-2 w-56 rounded-md shadow-lg bg-white dark:bg-slate-800 ring-1 ring-black dark:ring-white ring-opacity-5 focus:outline-none hidden z-10';
-        
+        menu.className = 'origin-top-left absolute left-0 mt-2 w-56 rounded-md shadow-lg bg-white dark:bg-slate-800 ring-1 ring-black ring-opacity-5 focus:outline-none hidden z-10'; // Corrected ring-white to ring-black
+
         options.forEach(option => {
             const a = document.createElement('a');
             a.href = '#';
@@ -115,6 +147,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 e.preventDefault();
                 document.getElementById(`${name}-label`).textContent = option.label;
                 state.filters[name] = option.value;
+                state.pagination.currentPage = 1; // New: Reset to page 1 on filter change
                 fetchAndRenderTransactions(); // Re-fetch data when a filter changes
                 menu.classList.add('hidden');
             };
@@ -136,7 +169,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return dropdownContainer;
     };
 
-    //Fetches categories for a user and builds all the filter dropdowns.
+    // Fetches categories for a user and builds all the filter dropdowns.
     const populateFilters = async () => {
         elements.filterControls.innerHTML = ''; // Clear placeholder
 
@@ -147,7 +180,7 @@ document.addEventListener('DOMContentLoaded', () => {
             { value: 'expense', label: 'Expense' }
         ];
         elements.filterControls.appendChild(createDropdown('type', typeOptions, 'All Types'));
-        
+
         // 2. Date Range Filter
         const dateOptions = [
             { value: 'all', label: 'All Time' },
@@ -171,7 +204,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error('Could not fetch categories', error);
             // Still show a disabled dropdown
-            const disabledCategory = createDropdown('category', [{value: 'all', label: 'Could not load'}], 'All Categories');
+            const disabledCategory = createDropdown('category', [{ value: 'all', label: 'Could not load' }], 'All Categories');
             disabledCategory.querySelector('button').disabled = true;
             elements.filterControls.appendChild(disabledCategory);
         }
@@ -186,7 +219,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (response.ok) {
                 // If the response is successful, the user is logged in.
                 const user = await response.json();
-                elements.welcomeMessage.textContent = `Welcome back, ${user.displayName.split(' ')[0]}!`; // Get the first name                
+                elements.welcomeMessage.textContent = `Welcome back, ${user.displayName.split(' ')[0]}!`; // Get the first name
                 
                 // Fetch and render transactions when user is confirmed.
                 await populateFilters();
@@ -214,7 +247,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const savedTheme = localStorage.getItem('theme');
         if (savedTheme) applyTheme(savedTheme);
         else if (window.matchMedia('(prefers-color-scheme: dark)').matches) applyTheme('dark');
-        
+
         // Event listener for the theme menu button.
         elements.themeMenuButton.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -297,8 +330,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         elements.dateInput.valueAsDate = new Date();
                     }
 
-                    // Refresh everything after adding a new transaction
-                    await populateFilters();
+                    // New: Go back to first page to see new item
+                    state.pagination.currentPage = 1;
                     await fetchAndRenderTransactions();
                 } else {
                     const errorData = await response.json();
@@ -307,6 +340,31 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (error) {
                 console.error('Failed to submit transaction:', error);
                 alert('An error occurred. Please try again.');
+            }
+        });
+    }
+
+    // New: Pagination Event Listeners
+    if (elements.limitSelect) { // Added check for element existence
+        elements.limitSelect.addEventListener('change', () => {
+            state.pagination.itemsPerPage = parseInt(elements.limitSelect.value, 10);
+            state.pagination.currentPage = 1;
+            fetchAndRenderTransactions();
+        });
+    }
+    if (elements.prevPageBtn) { // Added check for element existence
+        elements.prevPageBtn.addEventListener('click', () => {
+            if (state.pagination.currentPage > 1) {
+                state.pagination.currentPage--;
+                fetchAndRenderTransactions();
+            }
+        });
+    }
+    if (elements.nextPageBtn) { // Added check for element existence
+        elements.nextPageBtn.addEventListener('click', () => {
+            if (state.pagination.currentPage < state.pagination.totalPages) {
+                state.pagination.currentPage++;
+                fetchAndRenderTransactions();
             }
         });
     }
