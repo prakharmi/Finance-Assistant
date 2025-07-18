@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { isLoggedIn } = require('../middleware/authMiddleware');
 const Transaction = require('../models/Transaction');
+const Category = require('../models/Category');
 const mongoose = require('mongoose');
 
 // GET /api/analytics/summary
@@ -27,6 +28,24 @@ router.get('/summary', isLoggedIn, async (req, res) => {
         res.json(result);
     } catch (error) {
         console.error('Error fetching summary:', error);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+// GET /api/analytics/expenses-by-category
+// Get total expenses grouped by category
+router.get('/expenses-by-category', isLoggedIn, async (req, res) => {
+    try {
+        const expensesByCategory = await Transaction.aggregate([
+            { $match: { user: new mongoose.Types.ObjectId(req.user.id), type: 'expense' } },
+            { $group: { _id: '$category', totalAmount: { $sum: '$amount' } } },
+            { $lookup: { from: 'categories', localField: '_id', foreignField: '_id', as: 'categoryDetails' } },
+            { $project: { _id: 0, category: { $arrayElemAt: ['$categoryDetails.name', 0] }, totalAmount: 1 } },
+            { $sort: { totalAmount: -1 } }
+        ]);
+        res.json(expensesByCategory);
+    } catch (error) {
+        console.error('Error fetching expenses by category:', error);
         res.status(500).json({ message: 'Server Error' });
     }
 });
