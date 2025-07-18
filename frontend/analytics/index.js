@@ -6,6 +6,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // This object holds all the DOM elements we'll be working with.
     const elements = {
+        themeMenuButton: document.getElementById('theme-menu-button'),
+        themeMenu: document.getElementById('theme-menu'),
+        profileButtonContainer: document.getElementById('profile-button-container'),
         summaryCards: document.getElementById('summary-cards'),
         categoryChartContainer: document.getElementById('category-chart-container'),
         monthlySummaryChartContainer: document.getElementById('monthly-summary-chart-container'),
@@ -23,7 +26,31 @@ document.addEventListener('DOMContentLoaded', () => {
     const formatCurrency = (amount) => `₹${amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
     // UI Rendering
-
+    // Renders the user's profile button and dropdown in the header.
+    const renderProfileButton = (user) => {
+        const userPicture = user.photos?.[0]?.value || `https://ui-avatars.com/api/?name=${user.displayName.replace(' ', '+')}&background=random&color=fff`;
+        elements.profileButtonContainer.innerHTML = `
+            <div class="relative">
+                <button id="profile-menu-button" type="button" class="flex items-center rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 dark:focus:ring-offset-slate-800 focus:ring-blue-500">
+                    <img class="h-8 w-8 rounded-full object-cover" src="${userPicture}" alt="User profile">
+                </button>
+                <div id="profile-menu" class="hidden absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-md shadow-lg ring-1 ring-black dark:ring-white ring-opacity-5 py-1 z-20">
+                    <a href="/frontend/dashboard/" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700">Dashboard</a>
+                    <a href="http://localhost:8080/auth/logout" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700">Logout</a>
+                </div>
+            </div>
+        `;
+        const profileMenuButton = document.getElementById('profile-menu-button');
+        const profileMenu = document.getElementById('profile-menu');
+        if (profileMenuButton && profileMenu) {
+            profileMenuButton.addEventListener('click', (e) => {
+                e.stopPropagation();
+                elements.themeMenu.classList.add('hidden');
+                profileMenu.classList.toggle('hidden');
+            });
+        }
+    };
+    
     // Fetches the financial summary data from the API and renders the summary cards.
     const renderSummaryCards = async () => {
         try {
@@ -190,25 +217,74 @@ document.addEventListener('DOMContentLoaded', () => {
             elements.categoryTrendChartContainer.innerHTML = '<p class="text-center text-red-500 pt-16">Could not load category trend chart.</p>';
         }
     };
-
+    
     // check if user is loggedd in, else redirect to main page.
     (async () => {
         try {
             const response = await fetch('http://localhost:8080/auth/me', { credentials: 'include' });
-            if (!response.ok) {
+            if (response.ok) {
+                // If logged in, render all our components.
+                const user = await response.json();
+                renderProfileButton(user);
+                renderSummaryCards();
+                renderCategoryChart();
+                renderMonthlySummaryChart();
+                populateCategoryDropdown();
+            } else {
                 window.location.href = '/frontend/';
-                return;
             }
-            // If logged in, render all our components.
-            renderSummaryCards();
-            renderCategoryChart();
-            renderMonthlySummaryChart();
-            populateCategoryDropdown();
         } catch (error) {
             console.error('Authentication check failed:', error);
             window.location.href = '/frontend/';
         }
     })();
+
+    // Dark mode theme switcher
+    if (elements.themeMenuButton) {
+        const applyTheme = (theme) => {
+            document.documentElement.classList.toggle('dark', theme === 'dark');
+            // Re-render all charts with correct colors after theme change
+            renderCategoryChart();
+            renderMonthlySummaryChart();
+            renderCategoryTrendChart(elements.categoryTrendSelect.value);
+        };
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme) applyTheme(savedTheme);
+        else if (window.matchMedia('(prefers-color-scheme: dark)').matches) applyTheme('dark');
+        
+        elements.themeMenuButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const profileMenu = document.getElementById('profile-menu');
+            if (profileMenu) profileMenu.classList.add('hidden');
+            elements.themeMenu.classList.toggle('hidden');
+        });
+
+        elements.themeMenu.querySelectorAll('[data-theme]').forEach(option => {
+            option.addEventListener('click', (e) => {
+                e.preventDefault();
+                const selectedTheme = e.target.getAttribute('data-theme');
+                if (selectedTheme === 'system') {
+                    localStorage.removeItem('theme');
+                    applyTheme(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+                } else {
+                    localStorage.setItem('theme', selectedTheme);
+                    applyTheme(selectedTheme);
+                }
+                elements.themeMenu.classList.add('hidden');
+            });
+        });
+    }
+
+    // This function closes any open dropdown menu when the user clicks elsewhere on the page.
+    window.addEventListener('click', () => {
+        const profileMenu = document.getElementById('profile-menu');
+        if (elements.themeMenu && !elements.themeMenu.classList.contains('hidden')) {
+            elements.themeMenu.classList.add('hidden');
+        }
+        if (profileMenu && !profileMenu.classList.contains('hidden')) {
+            profileMenu.classList.add('hidden');
+        }
+    });
 
     // Event listener for the category trend dropdown
     elements.categoryTrendSelect.addEventListener('change', (e) => {
