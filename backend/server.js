@@ -19,7 +19,10 @@ const authRoutes = require('./routes/auth');
 const app = express();
 
 // Middleware Setup
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:5500',
+  credentials: true // Allow cookies to be sent
+}));
 
 // Session Middleware
 app.use(session({
