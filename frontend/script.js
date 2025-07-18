@@ -1,4 +1,4 @@
-// Dark Mode Logic (Exactly like previous project)
+// Dark Mode Logic
 const themeMenuButton = document.getElementById('theme-menu-button');
 const themeMenu = document.getElementById('theme-menu');
 
@@ -14,6 +14,7 @@ if (themeMenuButton && themeMenu) {
         }
     };
 
+    // Check for a saved theme in localStorage or use the system preference.
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme) {
         applyTheme(savedTheme);
@@ -21,11 +22,13 @@ if (themeMenuButton && themeMenu) {
         applyTheme('dark');
     }
 
+    // Event listener for the theme menu button.
     themeMenuButton.addEventListener('click', (e) => {
         e.stopPropagation();
         themeMenu.classList.toggle('hidden');
     });
-
+    
+    // Event listeners for each theme option.
     themeOptions.forEach(option => {
         option.addEventListener('click', (e) => {
             e.preventDefault();
@@ -40,7 +43,8 @@ if (themeMenuButton && themeMenu) {
             themeMenu.classList.add('hidden');
         });
     });
-
+    
+    // Close the menu if the user clicks anywhere else on the window.
     window.addEventListener('click', () => {
         if (!themeMenu.classList.contains('hidden')) {
             themeMenu.classList.add('hidden');
