@@ -29,6 +29,11 @@ document.addEventListener('DOMContentLoaded', () => {
         receiptModal: document.getElementById('receipt-confirmation-modal'),
         receiptForm: document.getElementById('receipt-confirmation-form'),
         cancelReceiptBtn: document.getElementById('cancel-receipt-import'),
+        pdfUploadInput: document.getElementById('pdf-upload'),
+        pdfModal: document.getElementById('pdf-confirmation-modal'),
+        pdfForm: document.getElementById('pdf-confirmation-form'),
+        pdfListDiv: document.getElementById('pdf-transactions-list'),
+        cancelPdfBtn: document.getElementById('cancel-pdf-import'),
     };
 
     // Main function to fetch and render all dynamic content on the page.
@@ -70,7 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Function to show the confirmation modal
+    // Modal Handling Functions
     const showReceiptConfirmationModal = (data) => {
         elements.receiptForm.querySelector('#receipt-description').value = data.description;
         elements.receiptForm.querySelector('#receipt-amount').value = data.amount;
@@ -79,10 +84,29 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.receiptModal.classList.remove('hidden');
     };
     
-    // Function to hide the confirmation modal
     const hideReceiptConfirmationModal = () => {
         elements.receiptModal.classList.add('hidden');
         elements.receiptForm.reset();
+    };
+    
+    const showPdfConfirmationModal = (transactions) => {
+        elements.pdfListDiv.innerHTML = ''; // Clear previous entries
+        transactions.forEach((t, index) => {
+            const transactionRow = document.createElement('div');
+            transactionRow.className = 'grid grid-cols-1 md:grid-cols-4 gap-3 items-center border-b dark:border-slate-700 pb-3';
+            transactionRow.innerHTML = `
+                <input type="date" value="${t.date}" data-index="${index}" data-field="date" class="pdf-input rounded-md border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 shadow-sm text-sm">
+                <input type="text" value="${t.description}" data-index="${index}" data-field="description" class="pdf-input md:col-span-2 rounded-md border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 shadow-sm text-sm" placeholder="Description">
+                <input type="number" value="${t.amount}" data-index="${index}" data-field="amount" class="pdf-input rounded-md border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 shadow-sm text-sm" placeholder="Amount">
+            `;
+            elements.pdfListDiv.appendChild(transactionRow);
+        });
+        elements.pdfModal.classList.remove('hidden');
+    };
+    
+    const hidePdfConfirmationModal = () => {
+        elements.pdfModal.classList.add('hidden');
+        elements.pdfListDiv.innerHTML = '';
     };
 
     // Sets up all the event listeners for the page.
@@ -133,7 +157,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
-        // Transaction Form
+        // Manual Transaction Form
         if (elements.transactionForm) {
             let transactionType = 'expense';
             const typeButtons = elements.transactionForm.querySelectorAll('.transaction-type-btn');
@@ -208,7 +232,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
         
-        // Event Listeners for the Modal
+        // Receipt Modal Form Submission
         if (elements.receiptForm) {
             elements.receiptForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
@@ -233,6 +257,80 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (elements.cancelReceiptBtn) {
             elements.cancelReceiptBtn.addEventListener('click', hideReceiptConfirmationModal);
+        }
+
+        // PDF Upload Logic
+        if (elements.pdfUploadInput) {
+            elements.pdfUploadInput.addEventListener('change', async (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const formData = new FormData();
+                formData.append('pdf', file);
+                alert('Processing PDF... Please wait.');
+
+                try {
+                    const response = await fetch('http://localhost:8080/api/transactions/import-pdf', {
+                        method: 'POST',
+                        body: formData,
+                        credentials: 'include',
+                    });
+                    event.target.value = '';
+
+                    if (response.ok) {
+                        const transactions = await response.json();
+                        showPdfConfirmationModal(transactions);
+                    } else {
+                        const error = await response.json();
+                        alert(`Error: ${error.message}`);
+                    }
+                } catch (error) {
+                    alert('An error occurred while processing the PDF.');
+                    console.error('Error processing PDF:', error);
+                }
+            });
+        }
+        
+        // PDF Modal Form Submission
+        if (elements.pdfForm) {
+            elements.pdfForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const transactionRows = elements.pdfListDiv.querySelectorAll('.grid');
+                const transactionsToSave = [];
+                transactionRows.forEach(row => {
+                    transactionsToSave.push({
+                        date: row.querySelector('[data-field="date"]').value,
+                        description: row.querySelector('[data-field="description"]').value,
+                        amount: parseFloat(row.querySelector('[data-field="amount"]').value),
+                        type: 'expense', // Defaulting to expense
+                        category: 'Other' // Defaulting to Other
+                    });
+                });
+                
+                try {
+                    const response = await fetch('http://localhost:8080/api/transactions/add-multiple', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ transactions: transactionsToSave }),
+                        credentials: 'include'
+                    });
+
+                    if (response.ok) {
+                        hidePdfConfirmationModal();
+                        await loadPageContent();
+                        alert(`${transactionsToSave.length} transactions added successfully!`);
+                    } else {
+                        const errorData = await response.json();
+                        throw new Error(errorData.message);
+                    }
+                } catch (error) {
+                    alert(`Error: ${error.message}`);
+                }
+            });
+        }
+
+        if (elements.cancelPdfBtn) {
+            elements.cancelPdfBtn.addEventListener('click', hidePdfConfirmationModal);
         }
 
         // Pagination
@@ -273,8 +371,10 @@ document.addEventListener('DOMContentLoaded', () => {
             await loadPageContent();
 
         } catch (error) {
+            // If any part of initialization fails, redirect to login.
             window.location.href = '/frontend/';
         }
     };
+    
     init(); // Start application
 });
