@@ -67,6 +67,90 @@ router.post('/upload-receipt', isLoggedIn, upload.single('receipt'), async (req,
     }
 });
 
+// PDF Route Using Gemini API
+router.post('/import-pdf', isLoggedIn, upload.single('pdf'), async (req, res) => {
+    if (!req.file || !req.file.buffer) {
+        return res.status(400).json({ message: 'No file was uploaded.' });
+    }
+    if (!process.env.GEMINI_API_KEY) {
+        return res.status(500).json({ message: "Server is missing the Gemini API key." });
+    }
+
+    try {
+        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+
+        const pdfFile = {
+            inlineData: {
+                data: req.file.buffer.toString("base64"),
+                mimeType: req.file.mimetype,
+            },
+        };
+        
+        const prompt = `
+            Analyze the provided PDF document. Extract all rows from the transaction table.
+            For each row, provide the "Commodity" as description, "Category", "Date", and "Price".
+            Determine if the transaction is "income" or "expense" from the "Type" column (Credit/Debit).
+            Return the data as a clean JSON array of objects, where each object has keys: "description", "category", "date", "amount", and "type".
+            The amount should be a positive number. Do not include the header row in your output.
+        `;
+
+        const result = await model.generateContent([prompt, pdfFile]);
+        const responseText = result.response.text();
+        
+        // Clean the response to ensure it's valid JSON
+        const jsonText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+        const transactions = JSON.parse(jsonText);
+
+        if (!Array.isArray(transactions) || transactions.length === 0) {
+            return res.status(400).json({ message: 'Gemini could not extract any transactions from this PDF.' });
+        }
+        
+        res.status(200).json(transactions);
+
+    } catch (error) {
+        console.error('Error processing PDF with Gemini:', error); 
+        res.status(500).json({ message: 'The AI model could not process this PDF. It may be in an unsupported format or corrupted.' });
+    }
+});
+
+// Route to add multiple transactions from the PDF confirmation
+router.post('/add-multiple', isLoggedIn, async (req, res) => {
+    try {
+        const { transactions } = req.body;
+        if (!transactions || !Array.isArray(transactions) || transactions.length === 0) {
+            return res.status(400).json({ message: 'No transactions provided.' });
+        }
+
+        const savedTransactions = [];
+        for (const t of transactions) {
+            // Find or create a category for the transaction
+            let category = await Category.findOne({ name: t.category || 'Other', user: req.user.id });
+            if (!category) {
+                category = new Category({ name: t.category || 'Other', user: req.user.id });
+                await category.save();
+            }
+
+            const newTransaction = new Transaction({
+                user: req.user.id,
+                type: t.type,
+                description: t.description,
+                amount: t.amount,
+                date: t.date,
+                category: category._id,
+            });
+            const saved = await newTransaction.save();
+            savedTransactions.push(saved);
+        }
+
+        res.status(201).json(savedTransactions);
+
+    } catch (error) {
+        console.error('Error adding multiple transactions:', error);
+        res.status(500).json({ message: 'Server error while adding transactions.' });
+    }
+});
+
 // GET /api/transactions
 // Get all transactions for a user with filtering and pagination
 router.get('/', isLoggedIn, async (req, res) => {
