@@ -25,6 +25,10 @@ document.addEventListener('DOMContentLoaded', () => {
         pageInfo: document.getElementById('page-info'),
         prevPageBtn: document.getElementById('prev-page-btn'),
         nextPageBtn: document.getElementById('next-page-btn'),
+        receiptUploadInput: document.getElementById('receipt-upload'),
+        receiptModal: document.getElementById('receipt-confirmation-modal'),
+        receiptForm: document.getElementById('receipt-confirmation-form'),
+        cancelReceiptBtn: document.getElementById('cancel-receipt-import'),
     };
 
     // Main function to fetch and render all dynamic content on the page.
@@ -64,6 +68,21 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error('Could not load categories', error);
         }
+    };
+
+    // Function to show the confirmation modal
+    const showReceiptConfirmationModal = (data) => {
+        elements.receiptForm.querySelector('#receipt-description').value = data.description;
+        elements.receiptForm.querySelector('#receipt-amount').value = data.amount;
+        elements.receiptForm.querySelector('#receipt-date').value = data.date;
+        elements.receiptForm.querySelector('#receipt-category').value = data.category;
+        elements.receiptModal.classList.remove('hidden');
+    };
+    
+    // Function to hide the confirmation modal
+    const hideReceiptConfirmationModal = () => {
+        elements.receiptModal.classList.add('hidden');
+        elements.receiptForm.reset();
     };
 
     // Sets up all the event listeners for the page.
@@ -154,6 +173,67 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
         }
+        
+        // Receipt Upload Logic
+        if (elements.receiptUploadInput) {
+            elements.receiptUploadInput.addEventListener('change', async (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const formData = new FormData();
+                formData.append('receipt', file);
+                
+                alert('Processing receipt... Please wait.');
+
+                try {
+                    const response = await fetch('http://localhost:8080/api/transactions/upload-receipt', {
+                        method: 'POST',
+                        body: formData,
+                        credentials: 'include',
+                    });
+                    
+                    event.target.value = '';
+
+                    if (response.ok) {
+                        const extractedData = await response.json();
+                        showReceiptConfirmationModal(extractedData);
+                    } else {
+                        const error = await response.json();
+                        alert(`Error: ${error.message}`);
+                    }
+                } catch (error) {
+                    alert('An error occurred while uploading the receipt.');
+                    console.error('Error uploading receipt:', error);
+                }
+            });
+        }
+        
+        // Event Listeners for the Modal
+        if (elements.receiptForm) {
+            elements.receiptForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const transactionData = {
+                    type: 'expense',
+                    description: elements.receiptForm.querySelector('#receipt-description').value,
+                    amount: elements.receiptForm.querySelector('#receipt-amount').value,
+                    date: elements.receiptForm.querySelector('#receipt-date').value,
+                    category: elements.receiptForm.querySelector('#receipt-category').value
+                };
+
+                try {
+                    await api.addTransaction(transactionData);
+                    hideReceiptConfirmationModal();
+                    await loadPageContent();
+                    alert('Transaction added successfully!');
+                } catch (error) {
+                    alert(`Error: ${error.message}`);
+                }
+            });
+        }
+
+        if (elements.cancelReceiptBtn) {
+            elements.cancelReceiptBtn.addEventListener('click', hideReceiptConfirmationModal);
+        }
 
         // Pagination
         if (elements.limitSelect) {
@@ -193,44 +273,8 @@ document.addEventListener('DOMContentLoaded', () => {
             await loadPageContent();
 
         } catch (error) {
-            // If any part of initialization fails, redirect to login.
             window.location.href = '/frontend/';
         }
     };
-    
-    // Logic for adding transaction using upload receipt.
-    const receiptUploadInput = document.getElementById('receipt-upload');
-
-    if (receiptUploadInput) {
-        receiptUploadInput.addEventListener('change', async(event) => {
-            const file = event.target.files[0];
-            if (!file) {
-                return;
-            }
-
-            const formData = new FormData();
-            formData.append('receipt', file);
-
-            try {
-                const response = await fetch('http://localhost:8080/api/transactions/upload-receipt', {
-                    method: 'POST',
-                    body: formData,
-                    credentials: 'include',
-                });
-
-                if (response.ok) {
-                    alert('Receipt uploaded and transaction added!');
-                    loadPageContent();
-                } else {
-                    const error = await response.json();
-                    alert(`Error: ${error.message}`);
-                }
-            } catch (error) {
-                console.error('Error uploading receipt:', error);
-                alert('An error occurred while uploading the receipt.');
-            }
-        });
-    }
-
     init(); // Start application
 });
