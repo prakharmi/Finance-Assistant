@@ -38,31 +38,29 @@ async function extractTextFromImage(imageBuffer, mimeType) {
     }
 }
 
-// Route to handle receipt upload and processing
+// Route to handle receipt upload and EXTRACT data
 router.post('/upload-receipt', isLoggedIn, upload.single('receipt'), async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ message: 'No file uploaded.' });
         }
-        const { amount, date, category: categoryName } = await extractTextFromImage(req.file.buffer, req.file.mimetype);
-        if (!amount || !date || !categoryName) {
+
+        // Returns the extracted data
+        const { amount, date, category } = await extractTextFromImage(req.file.buffer, req.file.mimetype);
+
+        if (!amount || !date || !category) {
             return res.status(400).json({ message: 'Could not extract all required fields from the receipt.' });
         }
-        let category = await Category.findOne({ name: categoryName, user: req.user.id });
-        if (!category) {
-            category = new Category({ name: categoryName, user: req.user.id });
-            await category.save();
-        }
-        const newTransaction = new Transaction({
-            user: req.user.id,
+
+        // Send the extracted data back to the frontend for confirmation
+        res.status(200).json({
             type: 'expense',
-            description: 'Transaction from receipt',
+            description: 'Transaction from receipt', // A default description
             amount,
             date,
-            category: category._id,
+            category
         });
-        await newTransaction.save();
-        res.status(201).json(newTransaction);
+
     } catch (error) {
         console.error('Error processing receipt:', error);
         res.status(500).json({ message: error.message || 'An internal server error occurred while processing the receipt.' });
