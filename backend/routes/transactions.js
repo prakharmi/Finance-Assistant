@@ -4,6 +4,70 @@ const { isLoggedIn } = require('../middleware/authMiddleware');
 const Transaction = require('../models/Transaction');
 const Category = require('../models/Category');
 const mongoose = require('mongoose');
+const multer = require('multer'); // for file upload of receipt
+const { GoogleGenerativeAI } = require('@google/generative-ai'); // for using gemini API
+
+// Multer setup for file uploads
+const upload = multer({ storage: multer.memoryStorage() });
+
+// Function to extract text from an image using Gemini
+async function extractTextFromImage(imageBuffer, mimeType) {
+    if (!process.env.GEMINI_API_KEY) {
+        throw new Error("GEMINI_API_KEY is not set in the environment variables.");
+    }
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash-latest' });
+
+    const imageParts = [{
+        inlineData: {
+            data: imageBuffer.toString('base64'),
+            mimeType,
+        },
+    }, ];
+
+    const result = await model.generateContent(['Extract the total amount, date, and a suitable category (e.g., Food, Shopping, Utilities) from this receipt. Return the result in clean JSON format ONLY, like this: { "amount": 123.45, "date": "YYYY-MM-DD", "category": "CategoryName" }', ...imageParts]);
+    const response = await result.response;
+    const text = response.text();
+    
+    try {
+        const jsonText = text.replace(/```json/g, '').replace(/```/g, '').trim();
+        return JSON.parse(jsonText);
+    } catch (e) {
+        console.error("Failed to parse JSON from Gemini:", text);
+        throw new Error("Could not interpret the receipt's content.");
+    }
+}
+
+// Route to handle receipt upload and processing
+router.post('/upload-receipt', isLoggedIn, upload.single('receipt'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: 'No file uploaded.' });
+        }
+        const { amount, date, category: categoryName } = await extractTextFromImage(req.file.buffer, req.file.mimetype);
+        if (!amount || !date || !categoryName) {
+            return res.status(400).json({ message: 'Could not extract all required fields from the receipt.' });
+        }
+        let category = await Category.findOne({ name: categoryName, user: req.user.id });
+        if (!category) {
+            category = new Category({ name: categoryName, user: req.user.id });
+            await category.save();
+        }
+        const newTransaction = new Transaction({
+            user: req.user.id,
+            type: 'expense',
+            description: 'Transaction from receipt',
+            amount,
+            date,
+            category: category._id,
+        });
+        await newTransaction.save();
+        res.status(201).json(newTransaction);
+    } catch (error) {
+        console.error('Error processing receipt:', error);
+        res.status(500).json({ message: error.message || 'An internal server error occurred while processing the receipt.' });
+    }
+});
 
 // GET /api/transactions
 // Get all transactions for a user with filtering and pagination
