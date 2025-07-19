@@ -5,11 +5,8 @@ const Transaction = require('../models/Transaction');
 const Category = require('../models/Category');
 const mongoose = require('mongoose');
 
-/**
- * Helper function to create a date filter based on a range string.
- * @param {string} dateRange - 'all', 'week', 'month', '3months'
- * @returns {object} - A date filter object for the MongoDB query.
- */
+// create a date filter based on a range string ("all","past week" etc).
+// returns a date filtered object for the given mongodb query
 const createDateFilter = (dateRange) => {
     if (!dateRange || dateRange === 'all') {
         return {}; // No date filter
