@@ -77,12 +77,12 @@
                     <span>Upload Receipt</span>
                 </label>
                 <input type="file" id="receipt-upload" class="hidden" accept="image/*">
-                <button disabled class="flex-1 bg-white dark:bg-slate-800 border-2 border-dashed border-gray-300 dark:border-slate-700 text-gray-500 dark:text-gray-400 font-semibold py-3 px-4 rounded-lg cursor-not-allowed flex items-center justify-center gap-2 hover:border-gray-400 dark:hover:border-slate-500 transition">
-                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
+                
+                <label for="pdf-upload" class="flex-1 bg-white dark:bg-slate-800 border-2 border-dashed border-gray-300 dark:border-slate-700 text-gray-500 dark:text-gray-400 font-semibold py-3 px-4 rounded-lg cursor-pointer flex items-center justify-center gap-2 hover:border-gray-400 dark:hover:border-slate-500 transition">
+                     <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                     <span>Import PDF</span>
-                </button>
+                </label>
+                <input type="file" id="pdf-upload" class="hidden" accept=".pdf">
             </div>
 
             <div class="mt-10">
@@ -118,7 +118,7 @@
             </div>
         </main>
 
-        <!--Hidden confirmation popup, confirms if the data to be added by upload receipt is correct-->
+        <!--Hidden confirmation popup for UPLOAD RECEIPT, confirms if the data to be added is correct-->
         <div id="receipt-confirmation-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
             <div class="bg-white dark:bg-slate-800 rounded-lg p-6 w-full max-w-md shadow-xl">
                 <h2 class="text-xl font-bold mb-4 text-gray-900 dark:text-white">Confirm Transaction</h2>
@@ -144,6 +144,21 @@
                     <div class="flex justify-end gap-4 mt-6">
                         <button type="button" id="cancel-receipt-import" class="px-4 py-2 rounded-lg bg-gray-200 dark:bg-slate-600 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-slate-500">Cancel</button>
                         <button type="submit" id="confirm-receipt-import" class="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700">Confirm & Add</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!--Hidden confirmation popup for IMPORT PDF, confirms if the data to be added is correct-->
+        <div id="pdf-confirmation-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
+            <div class="bg-white dark:bg-slate-800 rounded-lg p-6 w-full max-w-4xl shadow-xl flex flex-col">
+                <h2 class="text-xl font-bold mb-4 text-gray-900 dark:text-white">Confirm PDF Transactions</h2>
+                <form id="pdf-confirmation-form" class="flex-grow min-h-0">
+                    <div id="pdf-transactions-list" class="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+                        </div>
+                    <div class="flex justify-end gap-4 mt-6 pt-4 border-t border-gray-200 dark:border-slate-700">
+                        <button type="button" id="cancel-pdf-import" class="px-4 py-2 rounded-lg bg-gray-200 dark:bg-slate-600 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-slate-500">Cancel</button>
+                        <button type="submit" id="confirm-pdf-import" class="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700">Confirm & Add All</button>
                     </div>
                 </form>
             </div>
