@@ -197,5 +197,40 @@ document.addEventListener('DOMContentLoaded', () => {
             window.location.href = '/frontend/';
         }
     };
+    
+    // Logic for adding transaction using upload receipt.
+    const receiptUploadInput = document.getElementById('receipt-upload');
+
+    if (receiptUploadInput) {
+        receiptUploadInput.addEventListener('change', async(event) => {
+            const file = event.target.files[0];
+            if (!file) {
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('receipt', file);
+
+            try {
+                const response = await fetch('http://localhost:8080/api/transactions/upload-receipt', {
+                    method: 'POST',
+                    body: formData,
+                    credentials: 'include',
+                });
+
+                if (response.ok) {
+                    alert('Receipt uploaded and transaction added!');
+                    loadPageContent();
+                } else {
+                    const error = await response.json();
+                    alert(`Error: ${error.message}`);
+                }
+            } catch (error) {
+                console.error('Error uploading receipt:', error);
+                alert('An error occurred while uploading the receipt.');
+            }
+        });
+    }
+
     init(); // Start application
 });
