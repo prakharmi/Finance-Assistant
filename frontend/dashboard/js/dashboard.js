@@ -93,12 +93,34 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.pdfListDiv.innerHTML = ''; // Clear previous entries
         transactions.forEach((t, index) => {
             const transactionRow = document.createElement('div');
-            transactionRow.className = 'grid grid-cols-1 md:grid-cols-4 gap-3 items-center border-b dark:border-slate-700 pb-3';
+            // Adding alternating background colors for readability
+            transactionRow.className = 'grid grid-cols-12 gap-4 items-center p-2 rounded-md odd:bg-slate-50 dark:odd:bg-slate-700/50';
             transactionRow.innerHTML = `
-                <input type="date" value="${t.date}" data-index="${index}" data-field="date" class="pdf-input rounded-md border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 shadow-sm text-sm">
-                <input type="text" value="${t.description}" data-index="${index}" data-field="description" class="pdf-input md:col-span-2 rounded-md border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 shadow-sm text-sm" placeholder="Description">
-                <input type="number" value="${t.amount}" data-index="${index}" data-field="amount" class="pdf-input rounded-md border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 shadow-sm text-sm" placeholder="Amount">
+                <div class="col-span-2">
+                    <input type="date" value="${t.date}" data-field="date" class="pdf-input w-full rounded-md border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 shadow-sm text-sm p-1.5">
+                </div>
+                <div class="col-span-5">
+                    <input type="text" value="${t.description}" data-field="description" class="pdf-input w-full rounded-md border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 shadow-sm text-sm p-1.5" placeholder="Description">
+                </div>
+                <div class="col-span-2">
+                    <input type="text" value="${t.category}" data-field="category" class="pdf-input w-full rounded-md border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 shadow-sm text-sm p-1.5" placeholder="Category">
+                </div>
+                <div class="col-span-2">
+                    <input type="number" value="${t.amount.toFixed(2)}" data-field="amount" step="0.01" class="pdf-input w-full text-right rounded-md border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 shadow-sm text-sm p-1.5" placeholder="Amount">
+                </div>
+                <div class="col-span-1 flex justify-center">
+                    <button type="button" class="remove-pdf-item-btn p-1.5 rounded-full text-gray-400 hover:bg-red-100 hover:text-red-500 dark:hover:bg-red-900/50 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </button>
+                </div>
             `;
+            // Hidden input to track the transaction type (income/expense)
+            const typeInput = document.createElement('input');
+            typeInput.type = 'hidden';
+            typeInput.dataset.field = 'type';
+            typeInput.value = t.type;
+            transactionRow.appendChild(typeInput);
+            
             elements.pdfListDiv.appendChild(transactionRow);
         });
         elements.pdfModal.classList.remove('hidden');
@@ -291,7 +313,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
         }
-        
+
+        // Discarding Items in PDF Modal
+        if (elements.pdfListDiv) {
+            elements.pdfListDiv.addEventListener('click', (e) => {
+                // Find the closest remove button to the click target
+                const removeButton = e.target.closest('.remove-pdf-item-btn');
+                if (removeButton) {
+                    // Find the parent row and remove it from the view
+                    removeButton.closest('.grid').remove();
+                }
+            });
+        }
+
         // PDF Modal Form Submission
         if (elements.pdfForm) {
             elements.pdfForm.addEventListener('submit', async (e) => {

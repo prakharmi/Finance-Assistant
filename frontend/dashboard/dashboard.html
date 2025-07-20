@@ -168,11 +168,18 @@
             <div class="bg-white dark:bg-slate-800 rounded-lg p-6 w-full max-w-4xl shadow-xl flex flex-col">
                 <h2 class="text-xl font-bold mb-4 text-gray-900 dark:text-white">Confirm PDF Transactions</h2>
                 <form id="pdf-confirmation-form" class="flex-grow min-h-0">
-                    <div id="pdf-transactions-list" class="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
-                        </div>
+                    <div class="hidden md:grid grid-cols-12 gap-4 px-3 pb-2 border-b dark:border-slate-600 text-sm font-semibold text-gray-500 dark:text-gray-400">
+                        <div class="col-span-2">Date</div>
+                        <div class="col-span-5">Description</div>
+                        <div class="col-span-2">Category</div>
+                        <div class="col-span-2 text-right">Amount</div>
+                        <div class="col-span-1 text-center">Action</div>
+                    </div>
+                    <div id="pdf-transactions-list" class="space-y-1 max-h-[60vh] overflow-y-auto pr-2 pt-2"></div>
+
                     <div class="flex justify-end gap-4 mt-6 pt-4 border-t border-gray-200 dark:border-slate-700">
-                        <button type="button" id="cancel-pdf-import" class="px-4 py-2 rounded-lg bg-gray-200 dark:bg-slate-600 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-slate-500">Cancel</button>
-                        <button type="submit" id="confirm-pdf-import" class="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700">Confirm & Add All</button>
+                        <button type="button" id="cancel-pdf-import" class="px-4 py-2 rounded-lg bg-gray-200 dark:bg-slate-600 ...">Cancel</button>
+                        <button type="submit" id="confirm-pdf-import" class="px-4 py-2 rounded-lg bg-blue-600 ...">Confirm & Add All</button>
                     </div>
                 </form>
             </div>
