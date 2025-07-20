@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
         cancelPdfBtn: document.getElementById('cancel-pdf-import'),
     };
 
-    // Main function to fetch and render all dynamic content on the page.
+    // Fetches transactions based on the current state and renders them to the page
     const loadPageContent = async () => {
         try {
             elements.transactionListDiv.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-center py-4">Loading...</p>';
@@ -51,7 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Populates the filter dropdowns with options.
+    // Fetches categories and populates the filter dropdowns.
     const populateFilters = async () => {
         elements.filterControls.innerHTML = '';
         const onFilterSelect = (filterName, value) => {
@@ -71,11 +71,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const categoryOptions = [{ value: 'all', label: 'All Categories' }, ...categories.map(cat => ({ value: cat, label: cat }))];
             elements.filterControls.appendChild(ui.createDropdown('category', categoryOptions, 'All Categories', (value) => onFilterSelect('category', value)));
         } catch (error) {
-            console.error('Could not load categories', error);
+            console.error('Could not load categories:', error);
         }
     };
-
-    // Modal Handling Functions
+    
+    // Displays the confirmation modal for a single receipt transaction.
     const showReceiptConfirmationModal = (data) => {
         elements.receiptForm.querySelector('#receipt-description').value = data.description;
         elements.receiptForm.querySelector('#receipt-amount').value = data.amount;
@@ -84,163 +84,124 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.receiptModal.classList.remove('hidden');
     };
     
+    // Hides the receipt confirmation modal.
     const hideReceiptConfirmationModal = () => {
         elements.receiptModal.classList.add('hidden');
         elements.receiptForm.reset();
     };
     
+    // Displays the confirmation modal for a list of PDF transactions.
     const showPdfConfirmationModal = (transactions) => {
-        elements.pdfListDiv.innerHTML = ''; // Clear previous entries
-        transactions.forEach((t, index) => {
+        elements.pdfListDiv.innerHTML = '';
+        transactions.forEach((t) => {
             const transactionRow = document.createElement('div');
-            // Adding alternating background colors for readability
             transactionRow.className = 'grid grid-cols-12 gap-4 items-center p-2 rounded-md odd:bg-slate-50 dark:odd:bg-slate-700/50';
             transactionRow.innerHTML = `
-                <div class="col-span-2">
-                    <input type="date" value="${t.date}" data-field="date" class="pdf-input w-full rounded-md border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 shadow-sm text-sm p-1.5">
-                </div>
-                <div class="col-span-5">
-                    <input type="text" value="${t.description}" data-field="description" class="pdf-input w-full rounded-md border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 shadow-sm text-sm p-1.5" placeholder="Description">
-                </div>
-                <div class="col-span-2">
-                    <input type="text" value="${t.category}" data-field="category" class="pdf-input w-full rounded-md border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 shadow-sm text-sm p-1.5" placeholder="Category">
-                </div>
-                <div class="col-span-2">
-                    <input type="number" value="${t.amount.toFixed(2)}" data-field="amount" step="0.01" class="pdf-input w-full text-right rounded-md border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 shadow-sm text-sm p-1.5" placeholder="Amount">
-                </div>
-                <div class="col-span-1 flex justify-center">
-                    <button type="button" class="remove-pdf-item-btn p-1.5 rounded-full text-gray-400 hover:bg-red-100 hover:text-red-500 dark:hover:bg-red-900/50 transition-colors">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                    </button>
-                </div>
+                <div class="col-span-2"><input type="date" value="${t.date}" data-field="date" class="pdf-input w-full rounded-md border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 shadow-sm text-sm p-1.5"></div>
+                <div class="col-span-5"><input type="text" value="${t.description}" data-field="description" class="pdf-input w-full rounded-md border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 shadow-sm text-sm p-1.5" placeholder="Description"></div>
+                <div class="col-span-2"><input type="text" value="${t.category}" data-field="category" class="pdf-input w-full rounded-md border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 shadow-sm text-sm p-1.5" placeholder="Category"></div>
+                <div class="col-span-2"><input type="number" value="${t.amount.toFixed(2)}" data-field="amount" step="0.01" class="pdf-input w-full text-right rounded-md border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 shadow-sm text-sm p-1.5" placeholder="Amount"></div>
+                <div class="col-span-1 flex justify-center"><button type="button" class="remove-pdf-item-btn p-1.5 rounded-full text-gray-400 hover:bg-red-100 hover:text-red-500 dark:hover:bg-red-900/50 transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button></div>
             `;
-            // Hidden input to track the transaction type (income/expense)
             const typeInput = document.createElement('input');
             typeInput.type = 'hidden';
             typeInput.dataset.field = 'type';
             typeInput.value = t.type;
             transactionRow.appendChild(typeInput);
-            
             elements.pdfListDiv.appendChild(transactionRow);
         });
         elements.pdfModal.classList.remove('hidden');
     };
     
+    // Hides the PDF confirmation modal.
     const hidePdfConfirmationModal = () => {
         elements.pdfModal.classList.add('hidden');
         elements.pdfListDiv.innerHTML = '';
     };
 
-    // Sets up all the event listeners for the page.
-    const setupEventListeners = () => {
-        // Dark Mode Logic
-        if (elements.themeMenuButton) {
-            const applyTheme = (theme) => {
-                document.documentElement.classList.toggle('dark', theme === 'dark');
-            };
-            const savedTheme = localStorage.getItem('theme');
-            if (savedTheme) applyTheme(savedTheme);
-            else if (window.matchMedia('(prefers-color-scheme: dark)').matches) applyTheme('dark');
-            
-            elements.themeMenuButton.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const profileMenu = document.getElementById('profile-menu');
-                if (profileMenu) profileMenu.classList.add('hidden');
-                elements.themeMenu.classList.toggle('hidden');
-            });
-
-            elements.themeMenu.querySelectorAll('[data-theme]').forEach(option => {
-                option.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const selectedTheme = e.target.getAttribute('data-theme');
-                    if (selectedTheme === 'system') {
-                        localStorage.removeItem('theme');
-                        applyTheme(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-                    } else {
-                        localStorage.setItem('theme', selectedTheme);
-                        applyTheme(selectedTheme);
-                    }
-                    elements.themeMenu.classList.add('hidden');
-                });
-            });
-        }
+    // Sets up listeners for theme switching and global clicks to close menus.
+    const setupHeaderListeners = () => {
+        if (!elements.themeMenuButton) return;
+        const applyTheme = (theme) => document.documentElement.classList.toggle('dark', theme === 'dark');
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme) applyTheme(savedTheme);
+        else if (window.matchMedia('(prefers-color-scheme: dark)').matches) applyTheme('dark');
         
-        // Window click to close menus
-        window.addEventListener('click', () => {
+        elements.themeMenuButton.addEventListener('click', (e) => {
+            e.stopPropagation();
             const profileMenu = document.getElementById('profile-menu');
-            if (elements.themeMenu && !elements.themeMenu.classList.contains('hidden')) {
+            if (profileMenu) profileMenu.classList.add('hidden');
+            elements.themeMenu.classList.toggle('hidden');
+        });
+
+        elements.themeMenu.querySelectorAll('[data-theme]').forEach(option => {
+            option.addEventListener('click', (e) => {
+                e.preventDefault();
+                const selectedTheme = e.target.getAttribute('data-theme');
+                if (selectedTheme === 'system') {
+                    localStorage.removeItem('theme');
+                    applyTheme(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+                } else {
+                    localStorage.setItem('theme', selectedTheme);
+                    applyTheme(selectedTheme);
+                }
                 elements.themeMenu.classList.add('hidden');
-            }
-            if (profileMenu && !profileMenu.classList.contains('hidden')) {
-                profileMenu.classList.add('hidden');
-            }
-            document.querySelectorAll('.relative .origin-top-left').forEach(m => {
-                m.classList.add('hidden');
             });
         });
 
-        // Manual Transaction Form
-        if (elements.transactionForm) {
-            let transactionType = 'expense';
-            const typeButtons = elements.transactionForm.querySelectorAll('.transaction-type-btn');
+        window.addEventListener('click', () => {
+            const profileMenu = document.getElementById('profile-menu');
+            if (elements.themeMenu && !elements.themeMenu.classList.contains('hidden')) elements.themeMenu.classList.add('hidden');
+            if (profileMenu && !profileMenu.classList.contains('hidden')) profileMenu.classList.add('hidden');
+            document.querySelectorAll('.relative .origin-top-left').forEach(m => m.classList.add('hidden'));
+        });
+    };
 
-            typeButtons.forEach(button => {
-                button.addEventListener('click', () => {
-                    transactionType = button.getAttribute('data-type');
-                    typeButtons.forEach(btn => {
-                        btn.classList.remove('bg-white', 'dark:bg-slate-600', 'shadow-sm', 'text-gray-900', 'dark:text-white');
-                        btn.classList.add('text-gray-500', 'dark:text-gray-400');
-                    });
-                    button.classList.add('bg-white', 'dark:bg-slate-600', 'shadow-sm', 'text-gray-900', 'dark:text-white');
-                });
+    // Sets up the listener for the main manual transaction form.
+    const setupTransactionFormListener = () => {
+        if (!elements.transactionForm) return;
+        let transactionType = 'expense';
+        const typeButtons = elements.transactionForm.querySelectorAll('.transaction-type-btn');
+
+        typeButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                transactionType = button.getAttribute('data-type');
+                typeButtons.forEach(btn => btn.classList.remove('bg-white', 'dark:bg-slate-600', 'shadow-sm', 'text-gray-900', 'dark:text-white'));
+                button.classList.add('bg-white', 'dark:bg-slate-600', 'shadow-sm', 'text-gray-900', 'dark:text-white');
             });
+        });
 
-            if (elements.dateInput) elements.dateInput.valueAsDate = new Date();
-            
-            elements.transactionForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const formData = new FormData(elements.transactionForm);
-                const transactionData = {
-                    type: transactionType,
-                    description: formData.get('description'),
-                    amount: formData.get('amount'),
-                    category: formData.get('category'),
-                    date: formData.get('date')
-                };
-
-                try {
-                    await api.addTransaction(transactionData);
-                    elements.transactionForm.reset();
-                    if (elements.dateInput) elements.dateInput.valueAsDate = new Date();
-                    ui.showToast("Transaction added successfully!", "success");
-                    state.pagination.currentPage = 1;
-                    await loadPageContent();
-                } catch (error) {
-                    ui.showToast(error.message, "error");
-                }
-            });
-        }
+        if (elements.dateInput) elements.dateInput.valueAsDate = new Date();
         
-        // Receipt Upload Logic
+        elements.transactionForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(elements.transactionForm);
+            const transactionData = { type: transactionType, description: formData.get('description'), amount: formData.get('amount'), category: formData.get('category'), date: formData.get('date') };
+            try {
+                await api.addTransaction(transactionData);
+                elements.transactionForm.reset();
+                if (elements.dateInput) elements.dateInput.valueAsDate = new Date();
+                ui.showToast("Transaction added successfully!", "success");
+                state.pagination.currentPage = 1;
+                await loadPageContent();
+            } catch (error) {
+                ui.showToast(error.message, "error");
+            }
+        });
+    };
+
+    // Sets up listeners for the receipt and PDF file upload buttons.
+    const setupFileUploadListeners = () => {
         if (elements.receiptUploadInput) {
             elements.receiptUploadInput.addEventListener('change', async (event) => {
                 const file = event.target.files[0];
                 if (!file) return;
-
                 const formData = new FormData();
                 formData.append('receipt', file);
-                
-                alert('Processing receipt... Please wait.');
-
+                ui.showToast("Processing receipt...", "success");
                 try {
-                    const response = await fetch('http://localhost:8080/api/transactions/upload-receipt', {
-                        method: 'POST',
-                        body: formData,
-                        credentials: 'include',
-                    });
-                    
-                    event.target.value = '';
-
+                    const response = await fetch('http://localhost:8080/api/transactions/upload-receipt', { method: 'POST', body: formData, credentials: 'include' });
+                    event.target.value = ''; // Reset file input
                     if (response.ok) {
                         const extractedData = await response.json();
                         showReceiptConfirmationModal(extractedData);
@@ -254,52 +215,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
         }
-        
-        // Receipt Modal Form Submission
-        if (elements.receiptForm) {
-            elements.receiptForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const transactionData = {
-                    type: 'expense',
-                    description: elements.receiptForm.querySelector('#receipt-description').value,
-                    amount: elements.receiptForm.querySelector('#receipt-amount').value,
-                    date: elements.receiptForm.querySelector('#receipt-date').value,
-                    category: elements.receiptForm.querySelector('#receipt-category').value
-                };
-
-                try {
-                    await api.addTransaction(transactionData);
-                    hideReceiptConfirmationModal();
-                    await loadPageContent();
-                    ui.showToast("Receipt transaction added!", "success");
-                } catch (error) {
-                    ui.showToast(error.message, "error");
-                }
-            });
-        }
-
-        if (elements.cancelReceiptBtn) {
-            elements.cancelReceiptBtn.addEventListener('click', hideReceiptConfirmationModal);
-        }
-
-        // PDF Upload Logic
         if (elements.pdfUploadInput) {
             elements.pdfUploadInput.addEventListener('change', async (event) => {
                 const file = event.target.files[0];
                 if (!file) return;
-
                 const formData = new FormData();
                 formData.append('pdf', file);
-                alert('Processing PDF... Please wait.');
-
+                ui.showToast("Processing PDF...", "success");
                 try {
-                    const response = await fetch('http://localhost:8080/api/transactions/import-pdf', {
-                        method: 'POST',
-                        body: formData,
-                        credentials: 'include',
-                    });
-                    event.target.value = '';
-
+                    const response = await fetch('http://localhost:8080/api/transactions/import-pdf', { method: 'POST', body: formData, credentials: 'include' });
+                    event.target.value = ''; // Reset file input
                     if (response.ok) {
                         const transactions = await response.json();
                         showPdfConfirmationModal(transactions);
@@ -313,62 +238,61 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
         }
+    };
 
-        // Discarding Items in PDF Modal
-        if (elements.pdfListDiv) {
-            elements.pdfListDiv.addEventListener('click', (e) => {
-                // Find the closest remove button to the click target
-                const removeButton = e.target.closest('.remove-pdf-item-btn');
-                if (removeButton) {
-                    // Find the parent row and remove it from the view
-                    removeButton.closest('.grid').remove();
-                }
-            });
-        }
-
-        // PDF Modal Form Submission
-        if (elements.pdfForm) {
-            elements.pdfForm.addEventListener('submit', async (e) => {
+    // Sets up listeners for actions within the confirmation modals (submit, cancel, discard item).
+    const setupModalListeners = () => {
+        if (elements.receiptForm) {
+            elements.receiptForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
-                const transactionRows = elements.pdfListDiv.querySelectorAll('.grid');
-                const transactionsToSave = [];
-                transactionRows.forEach(row => {
-                    transactionsToSave.push({
-                        date: row.querySelector('[data-field="date"]').value,
-                        description: row.querySelector('[data-field="description"]').value,
-                        amount: parseFloat(row.querySelector('[data-field="amount"]').value),
-                        type: 'expense', // Defaulting to expense
-                        category: 'Other' // Defaulting to Other
-                    });
-                });
-                
+                const transactionData = { type: 'expense', description: elements.receiptForm.querySelector('#receipt-description').value, amount: elements.receiptForm.querySelector('#receipt-amount').value, date: elements.receiptForm.querySelector('#receipt-date').value, category: elements.receiptForm.querySelector('#receipt-category').value };
                 try {
-                    const response = await fetch('http://localhost:8080/api/transactions/add-multiple', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ transactions: transactionsToSave }),
-                        credentials: 'include'
-                    });
-
-                    if (response.ok) {
-                        hidePdfConfirmationModal();
-                        await loadPageContent();
-                        ui.showToast(`${transactionsToSave.length} transactions added!`, "success");
-                    } else {
-                        const errorData = await response.json();
-                        throw new Error(errorData.message);
-                    }
+                    await api.addTransaction(transactionData);
+                    hideReceiptConfirmationModal();
+                    await loadPageContent();
+                    ui.showToast("Receipt transaction added!", "success");
                 } catch (error) {
                     ui.showToast(error.message, "error");
                 }
             });
         }
+        if (elements.cancelReceiptBtn) elements.cancelReceiptBtn.addEventListener('click', hideReceiptConfirmationModal);
 
-        if (elements.cancelPdfBtn) {
-            elements.cancelPdfBtn.addEventListener('click', hidePdfConfirmationModal);
+        if (elements.pdfListDiv) {
+            elements.pdfListDiv.addEventListener('click', (e) => {
+                const removeButton = e.target.closest('.remove-pdf-item-btn');
+                if (removeButton) removeButton.closest('.grid').remove();
+            });
         }
+        if (elements.pdfForm) {
+            elements.pdfForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const transactionRows = elements.pdfListDiv.querySelectorAll('.grid');
+                if (transactionRows.length === 0) {
+                    ui.showToast("Nothing to import.", "error");
+                    hidePdfConfirmationModal();
+                    return;
+                }
+                const transactionsToSave = [];
+                transactionRows.forEach(row => {
+                    transactionsToSave.push({ date: row.querySelector('[data-field="date"]').value, description: row.querySelector('[data-field="description"]').value, amount: parseFloat(row.querySelector('[data-field="amount"]').value), type: row.querySelector('[data-field="type"]').value, category: row.querySelector('[data-field="category"]').value });
+                });
+                
+                try {
+                    await api.addMultipleTransactions(transactionsToSave);
+                    hidePdfConfirmationModal();
+                    await loadPageContent();
+                    ui.showToast(`${transactionsToSave.length} transactions added!`, "success");
+                } catch (error) {
+                    ui.showToast(error.message, "error");
+                }
+            });
+        }
+        if (elements.cancelPdfBtn) elements.cancelPdfBtn.addEventListener('click', hidePdfConfirmationModal);
+    };
 
-        // Pagination
+    // Sets up listeners for the transaction list (delete) and pagination controls.
+    const setupListAndPaginationListeners = () => {
         if (elements.limitSelect) {
             elements.limitSelect.addEventListener('change', () => {
                 state.pagination.itemsPerPage = parseInt(elements.limitSelect.value, 10);
@@ -392,23 +316,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
         }
-
-        // For deleting transactions
-        // We use event delegation on the container for efficiency.
         if (elements.transactionListDiv) {
             elements.transactionListDiv.addEventListener('click', async (e) => {
-                // Find the closest delete button to the click target
                 const deleteButton = e.target.closest('.delete-btn');
-                
                 if (deleteButton) {
                     const transactionId = deleteButton.dataset.id;
-                    
-                    // Ask for user confirmation before deleting
                     if (confirm('Are you sure you want to delete this transaction?')) {
                         try {
                             await api.deleteTransaction(transactionId);
                             ui.showToast('Transaction deleted!', 'success');
-                            // Refresh the list to show the item has been removed
                             await loadPageContent();
                         } catch (error) {
                             ui.showToast(error.message, 'error');
@@ -419,14 +335,20 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Initializes the entire page.
+    // The main initialization function for the page.
     const init = async () => {
         try {
             const user = await api.fetchUserData();
             elements.welcomeMessage.textContent = `Welcome back, ${user.displayName.split(' ')[0]}!`;
             ui.renderProfileButton(elements.profileButtonContainer, user);
             
-            setupEventListeners();
+            // Call all setup functions
+            setupHeaderListeners();
+            setupTransactionFormListener();
+            setupFileUploadListeners();
+            setupModalListeners();
+            setupListAndPaginationListeners();
+
             await populateFilters();
             await loadPageContent();
 
@@ -436,5 +358,5 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     
-    init(); // Start application
+    init(); // Start the application
 });

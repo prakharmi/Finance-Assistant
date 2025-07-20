@@ -8,7 +8,7 @@ export const fetchUserData = async () => {
     return await response.json();
 };
 
-// Fetches transactions from the server based on current filters and pagination.(takes the current state of filters and pagination)
+// Fetches transactions from the server based on current filters and pagination.
 export const fetchTransactions = async (state) => {
     const { type, category, dateRange } = state.filters;
     const { currentPage, itemsPerPage } = state.pagination;
@@ -25,7 +25,7 @@ export const fetchCategories = async () => {
     return await response.json();
 };
 
-// Submits a new transaction to the server.(takes transactiondata as parameter, returns transaction object)
+// Submits a new transaction to the server.
 export const addTransaction = async (transactionData) => {
     const response = await fetch(`${BASE_URL}/api/transactions`, {
         method: 'POST',
@@ -40,7 +40,7 @@ export const addTransaction = async (transactionData) => {
     return await response.json();
 };
 
-// Deletes a transaction from the server
+// Deletes a transaction from the server.
 export const deleteTransaction = async (transactionId) => {
     const response = await fetch(`${BASE_URL}/api/transactions/${transactionId}`, {
         method: 'DELETE',
@@ -49,6 +49,21 @@ export const deleteTransaction = async (transactionId) => {
     if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to delete transaction');
+    }
+    return await response.json();
+};
+
+// Function to add multiple transactions from PDF import
+export const addMultipleTransactions = async (transactions) => {
+    const response = await fetch(`${BASE_URL}/api/transactions/add-multiple`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transactions }), // The backend expects an object with a 'transactions' key
+        credentials: 'include'
+    });
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to add transactions');
     }
     return await response.json();
 };
