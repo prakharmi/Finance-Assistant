@@ -2,14 +2,12 @@
 
 SpendSenseAI is a modern, full-stack web application that helps users **track, manage, and analyze** their financial activities. Powered by **Google's Gemini AI**, the app automates data extraction from receipts and PDF bank statements, delivering seamless insights into spending habits with minimal manual input.
 
-> 🚀 Built as a comprehensive solution to a Software Engineer Project Assignment at FaceTpe India, it fulfills all core and bonus requirements with a robust, scalable, and user-centric design.
-
 ---
 
 ## 🎥 Demo Video
 
-> _[I'll insert it here]_  
-> 
+> _[Click on the thumbnail below to watch the demonstration. Alternatively, click on this link to view- https://youtu.be/r4zWUUflYio ]_  
+> [![Watch the video](https://img.youtube.com/vi/r4zWUUflYio/0.jpg)](https://youtu.be/r4zWUUflYio)
 
 ---
 
