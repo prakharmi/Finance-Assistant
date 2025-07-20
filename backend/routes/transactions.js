@@ -253,6 +253,29 @@ router.post('/', isLoggedIn, async (req, res) => {
     }
 });
 
+// Route to DELETE a transaction
+router.delete('/:id', isLoggedIn, async (req, res) => {
+    try {
+        const transactionId = req.params.id;
+
+        // Ensure the transaction belongs to the logged-in user before deleting
+        const transaction = await Transaction.findOneAndDelete({ 
+            _id: transactionId, 
+            user: req.user.id 
+        });
+
+        if (!transaction) {
+            // If no transaction was found/deleted, it either doesn't exist, or doesn't belong to the user
+            return res.status(404).json({ message: 'Transaction not found.' });
+        }
+
+        res.status(200).json({ message: 'Transaction deleted successfully.' });
+
+    } catch (error) {
+        console.error('Error deleting transaction:', error);
+        res.status(500).json({ message: 'Server error while deleting transaction.' });
+    }
+});
 
 // GET /api/transactions/categories
 // Get all unique categories for a user
