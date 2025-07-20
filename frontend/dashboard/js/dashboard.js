@@ -358,6 +358,31 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
         }
+
+        // For deleting transactions
+        // We use event delegation on the container for efficiency.
+        if (elements.transactionListDiv) {
+            elements.transactionListDiv.addEventListener('click', async (e) => {
+                // Find the closest delete button to the click target
+                const deleteButton = e.target.closest('.delete-btn');
+                
+                if (deleteButton) {
+                    const transactionId = deleteButton.dataset.id;
+                    
+                    // Ask for user confirmation before deleting
+                    if (confirm('Are you sure you want to delete this transaction?')) {
+                        try {
+                            await api.deleteTransaction(transactionId);
+                            ui.showToast('Transaction deleted!', 'success');
+                            // Refresh the list to show the item has been removed
+                            await loadPageContent();
+                        } catch (error) {
+                            ui.showToast(error.message, 'error');
+                        }
+                    }
+                }
+            });
+        }
     };
 
     // Initializes the entire page.
