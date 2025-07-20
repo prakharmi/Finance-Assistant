@@ -105,3 +105,40 @@ export const renderProfileButton = (container, user) => {
         });
     }
 };
+
+// Reusable Toast Notification Function
+export const showToast = (message, type = 'success') => {
+    const toast = document.getElementById('toast-notification');
+    const toastMessage = document.getElementById('toast-message');
+    const toastIcon = document.getElementById('toast-icon');
+    if (!toast || !toastMessage || !toastIcon) return;
+
+    // Reset styles from previous toasts
+    toast.classList.remove('bg-green-500', 'bg-red-500');
+
+    // Define styles and icons for each type
+    const styles = {
+        success: {
+            bg: 'bg-green-500',
+            icon: `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`
+        },
+        error: {
+            bg: 'bg-red-500',
+            icon: `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`
+        }
+    };
+
+    // Apply the correct style based on the 'type' argument
+    const style = styles[type] || styles.success;
+    toast.classList.add(style.bg);
+    toastIcon.innerHTML = style.icon;
+    toastMessage.textContent = message;
+
+    // Show the toast
+    toast.classList.remove('hidden');
+
+    // Hide it after 3 seconds
+    setTimeout(() => {
+        toast.classList.add('hidden');
+    }, 3000);
+};

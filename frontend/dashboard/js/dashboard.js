@@ -190,10 +190,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     await api.addTransaction(transactionData);
                     elements.transactionForm.reset();
                     if (elements.dateInput) elements.dateInput.valueAsDate = new Date();
+                    ui.showToast("Transaction added successfully!", "success");
                     state.pagination.currentPage = 1;
                     await loadPageContent();
                 } catch (error) {
-                    alert(`Error: ${error.message}`);
+                    ui.showToast(error.message, "error");
                 }
             });
         }
@@ -223,10 +224,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         showReceiptConfirmationModal(extractedData);
                     } else {
                         const error = await response.json();
-                        alert(`Error: ${error.message}`);
+                        ui.showToast(error.message, "error");
                     }
                 } catch (error) {
-                    alert('An error occurred while uploading the receipt.');
+                    ui.showToast("Error processing receipt.", "error");
                     console.error('Error uploading receipt:', error);
                 }
             });
@@ -248,9 +249,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     await api.addTransaction(transactionData);
                     hideReceiptConfirmationModal();
                     await loadPageContent();
-                    alert('Transaction added successfully!');
+                    ui.showToast("Receipt transaction added!", "success");
                 } catch (error) {
-                    alert(`Error: ${error.message}`);
+                    ui.showToast(error.message, "error");
                 }
             });
         }
@@ -282,10 +283,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         showPdfConfirmationModal(transactions);
                     } else {
                         const error = await response.json();
-                        alert(`Error: ${error.message}`);
+                        ui.showToast(error.message, "error");
                     }
                 } catch (error) {
-                    alert('An error occurred while processing the PDF.');
+                    ui.showToast("Error processing PDF.", "error");
                     console.error('Error processing PDF:', error);
                 }
             });
@@ -318,13 +319,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (response.ok) {
                         hidePdfConfirmationModal();
                         await loadPageContent();
-                        alert(`${transactionsToSave.length} transactions added successfully!`);
+                        ui.showToast(`${transactionsToSave.length} transactions added!`, "success");
                     } else {
                         const errorData = await response.json();
                         throw new Error(errorData.message);
                     }
                 } catch (error) {
-                    alert(`Error: ${error.message}`);
+                    ui.showToast(error.message, "error");
                 }
             });
         }
